@@ -16,6 +16,7 @@ class Verify
     private $sentIntervalTime = 60;  // 获取频率 s
     private $verifyTimes = 3;
     private $yxTime = 600;  // 有效时间 s
+    private $codeLength;
 
     public function __construct()
     {
@@ -45,6 +46,12 @@ class Verify
         return $this;
     }
 
+    public function setCodeLength($length)
+    {
+        $this->codeLength = $length;
+        return $this;
+    }
+
     public function setSentMaxTimes($times)
     {
         $this->sentMaxTimes = $times;
@@ -71,11 +78,11 @@ class Verify
 
     public function getCode()
     {
-        $code = rand(1000, 9999);
+        $code = rand(pow(10, $this->codeLength - 1), pow(10, $this->codeLength) - 1);
         $date = date('Y-m-d');
         $dateTime = date('Y-m-d H:i:s');
 
-        $smsModel = \DB::table('sms_binds')->where($this->idField, $this->idValue)->first();
+        $smsModel = \DB::table($this->tableName)->where($this->idField, $this->idValue)->first();
         if ($smsModel) {
             if ($smsModel->sent_times >= $this->sentMaxTimes) {
                 $this->error->code = 1;
@@ -136,7 +143,7 @@ class Verify
             return false;
         }
 
-        if ($this->timestamp - strtotime($smsModel->updated_time) > $this->yxTime) {
+        if ($this->timestamp - strtotime($smsModel->updated_time) > $this->yxTime * 60) {
             $this->error->code = 5;
             $this->error->msg  = '验证码有效期限制';
             return false;
